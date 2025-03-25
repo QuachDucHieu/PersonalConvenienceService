@@ -4,8 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { User } from './entities/user.entity';
+import { User } from '../user/entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -44,10 +45,23 @@ export class AuthService {
     // Lưu user vào database
     await this.userRepository.save(user);
 
-    // Tạo và trả về token
-    const payload = { sub: user.id, email: user.email };
+    // Tạo và trả về token với cấu trúc mới
+    const payload = {
+      jti: uuidv4(),
+      name: user.name,
+      unique_name: user.email,
+      email: user.email,
+      role: 'user',
+      Organization: uuidv4(),
+      nbf: Math.floor(Date.now() / 1000),
+      iat: Math.floor(Date.now() / 1000),
+    };
+
+    const token = await this.jwtService.signAsync(payload);
+    console.log('Generated token:', token);
+
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: token,
     };
   }
 
@@ -69,9 +83,23 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { sub: user.id, email: user.email };
+    // Tạo và trả về token với cấu trúc mới
+    const payload = {
+      jti: uuidv4(),
+      name: user.name,
+      unique_name: user.email,
+      email: user.email,
+      role: 'user',
+      Organization: uuidv4(),
+      nbf: Math.floor(Date.now() / 1000),
+      iat: Math.floor(Date.now() / 1000),
+    };
+
+    const token = await this.jwtService.signAsync(payload);
+    console.log('Generated token:', token);
+
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: token,
     };
   }
 }

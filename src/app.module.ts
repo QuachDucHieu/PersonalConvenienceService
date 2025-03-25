@@ -3,20 +3,27 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      envFilePath: '.env.local',
+    }),
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5433,
-      username: 'postgres',
-      password: 'Hh010120',
-      database: 'Personal_convenience',
+      type: 'mariadb',
+      host: '14.225.192.111',
+      port: 3306,
+      username: 'root',
+      password: '@dmin123',
+      database: 'hieu_qd',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // Không nên dùng trong production
+      synchronize: true,
+      logging: true,
     }),
     AuthModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
