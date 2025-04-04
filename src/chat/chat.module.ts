@@ -3,19 +3,23 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { Message } from './entities/message.entity';
-import { UserService } from '../user/user.service';
-import { User } from '../user/entities/user.entity';
-import { FileUploadService } from './file-upload.service';
-import { MulterModule } from '@nestjs/platform-express';
+import { Conversation } from './entities/conversation.entity';
+import { FileUploadModule } from '../file-upload/file-upload.module';
+import { UserModule } from '../user/user.module';
+import { ChatGateway } from './chat.gateway';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Message, User]),
-    MulterModule.register({
-      dest: './uploads',
-    }),
+    TypeOrmModule.forFeature([Message, Conversation]),
+    FileUploadModule,
+    UserModule,
+    JwtModule,
+    ConfigModule,
   ],
   controllers: [ChatController],
-  providers: [ChatService, UserService, FileUploadService],
+  providers: [ChatService, ChatGateway],
+  exports: [ChatService],
 })
 export class ChatModule {} 

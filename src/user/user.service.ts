@@ -16,16 +16,27 @@ export class UserService {
     });
   }
 
-  async findById(id: number) {
-    const user = await this.userRepository.findOne({
-      where: { id },
-      select: ['id', 'name', 'email', 'phone'], // Không trả về password
-    });
-
+  async findById(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException('User not found');
     }
-
     return user;
+  }
+
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async create(email: string, password: string): Promise<User> {
+    const user = this.userRepository.create({
+      email,
+      password, // Trong thực tế nên hash password trước khi lưu
+    });
+    return this.userRepository.save(user);
   }
 } 

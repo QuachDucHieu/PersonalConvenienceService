@@ -1,43 +1,37 @@
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
 
 interface JwtPayload {
-  jti: string;
-  name: string;
   unique_name: string;
-  email: string;
-  role: string;
-  Organization: string;
-  nbf: number;
-  exp: number;
-  iat: number;
+  email?: string;
+  role?: string;
+  Organization?: string;
+  name?: string;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private configService: ConfigService) {
+    const secretKey = configService.get<string>('JWT_SECRET');
+    if (!secretKey) {
+      throw new Error('JWT_SECRET is not defined');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'duahauhihi', // Nên dùng biến môi trường trong thực tế
+      secretOrKey: secretKey,
     });
   }
 
   async validate(payload: JwtPayload) {
-    
-    if (!payload) {
-      console.log('Invalid token payload - payload is null or undefined');
+    console.log('JWT payload:', payload);
+    if (!payload || !payload.unique_name) {
       throw new UnauthorizedException('Invalid token payload');
     }
-
-    // Trả về thông tin user từ payload
     return {
-      userId: payload.unique_name, // hoặc có thể dùng một trường khác làm userId
-      email: payload.email,
-      role: payload.role,
-      organization: payload.Organization,
-      name: payload.name,
+      email: payload.unique_name,
     };
   }
 } 

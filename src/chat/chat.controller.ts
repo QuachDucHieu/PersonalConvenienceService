@@ -1,50 +1,106 @@
-import { Controller, Post, Get, Body, Param, ParseIntPipe, UseGuards, UseInterceptors, UploadedFile, Headers, Req } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+  UploadedFile,
+  UseInterceptors,
+  ParseIntPipe,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { SendMessageDto } from './dto/send-message.dto';
-import { JwtStrategy } from '../auth/strategies/jwt.strategy';
-import { Request } from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 
+@ApiTags('Chat')
+@ApiBearerAuth()
 @Controller('chat')
-@UseGuards(JwtStrategy)
+@UseGuards(JwtAuthGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  @Get('conversations')
-  getUserConversations(@Headers() headers: any, @Req() request: Request) {
-    console.log('Request headers:', headers);
-    console.log('Authorization header:', headers.authorization);
-    console.log('User from request:', request.user);
-    
-    // TODO: Lấy userId từ JWT token
-    const userId = 1; // Tạm thời hardcode
-    return this.chatService.getUserConversations(userId);
-  }
-
-  @Post('send')
+  @Post('messages')
   @UseInterceptors(FileInterceptor('file'))
-  sendMessage(
-    @Body() messageDto: SendMessageDto,
-    // @UploadedFile() file?: Express.Multer.File,
+  @ApiOperation({ summary: 'Send a message' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        receiverId: { type: 'number' },
+        content: { type: 'string' },
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Message sent successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async sendMessage(
+    @Req() req,
+    @Body() body: { receiverId: number; content: string },
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    // TODO: Lấy senderId từ JWT token
-    const senderId = 1; // Tạm thời hardcode
-    return this.chatService.sendMessage(senderId, messageDto);
+    console.log('req?.email:', req?.email);
+    console.log('req?.user?.email:', req?.user?.email);
+    if (!req?.user?.email) {
+      throw new UnauthorizedException('User not found');
+    }
+    return this.chatService.sendMessage(
+      req.user.email,
+      body.receiverId,
+      body.content,
+      file,
+    );
   }
 
-  @Get('conversations/:otherUserId')
-  getConversation(
-    @Param('otherUserId', ParseIntPipe) otherUserId: number,
+  @Get('conversations')
+  @ApiOperation({ summary: 'Get user conversations' })
+  @ApiResponse({ status: 200, description: 'Conversations retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getUserConversations(@Req() req) {
+    if (!req.user?.email) {
+      throw new UnauthorizedException('User not found');
+    }
+    console.log('Request headers:', req.headers);
+    console.log('Authorization header:', req.headers.authorization);
+    console.log('User from request:', req.user);
+    return this.chatService.getUserConversations(req.user.email);
+  }
+
+  @Get('conversations/:conversationId/messages')
+  @ApiOperation({ summary: 'Get messages in a conversation' })
+  @ApiResponse({ status: 200, description: 'Messages retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Conversation not found' })
+  async getMessages(
+    @Param('conversationId', ParseIntPipe) conversationId: number,
+    @Req() req,
   ) {
-    // TODO: Lấy userId từ JWT token
-    const userId = 1; // Tạm thời hardcode
-    return this.chatService.getConversation(userId, otherUserId);
+    if (!req.user?.email) {
+      throw new UnauthorizedException('User not found');
+    }
+    return this.chatService.getMessages(conversationId, req.user.email);
   }
 
   @Post('messages/:messageId/read')
-  markAsRead(@Param('messageId', ParseIntPipe) messageId: number) {
-    // TODO: Lấy userId từ JWT token
-    const userId = 1; // Tạm thời hardcode
-    return this.chatService.markAsRead(messageId, userId);
+  @ApiOperation({ summary: 'Mark a message as read' })
+  @ApiResponse({ status: 200, description: 'Message marked as read successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Message not found' })
+  async markAsRead(
+    @Param('messageId', ParseIntPipe) messageId: number,
+    @Req() req,
+  ) {
+    if (!req.user?.email) {
+      throw new UnauthorizedException('User not found');
+    }
+    return this.chatService.markAsRead(messageId, req.user.email);
   }
 } 

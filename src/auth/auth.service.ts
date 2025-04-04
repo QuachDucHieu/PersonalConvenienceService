@@ -55,14 +55,16 @@ export class AuthService {
       Organization: uuidv4(),
       nbf: Math.floor(Date.now() / 1000),
       iat: Math.floor(Date.now() / 1000),
+      expiresIn: '30d',
     };
 
     const token = await this.jwtService.signAsync(payload);
     console.log('Generated token:', token);
 
-    return {
+    const data = {
       access_token: token,
     };
+    return data;
   }
 
   async login(loginDto: LoginDto) {
@@ -93,13 +95,19 @@ export class AuthService {
       Organization: uuidv4(),
       nbf: Math.floor(Date.now() / 1000),
       iat: Math.floor(Date.now() / 1000),
+      expiresIn: '30d',
     };
 
     const token = await this.jwtService.signAsync(payload);
-    console.log('Generated token:', token);
 
-    return {
+    const data = {
       access_token: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
     };
+    return data;
   }
 }

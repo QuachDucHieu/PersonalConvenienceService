@@ -1,31 +1,29 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { User } from '../../user/entities/user.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Conversation } from './conversation.entity';
 
-@Entity('messages')
+@Entity()
 export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('text')
-  content: string;
+  @Column()
+  conversationId: number;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'sender_id' })
-  sender: User;
-
-  @Column({ name: 'sender_id' })
+  @Column()
   senderId: number;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'receiver_id' })
-  receiver: User;
+  @Column({ type: 'text', nullable: true })
+  content: string;
 
-  @Column({ name: 'receiver_id' })
-  receiverId: number;
+  @Column({ nullable: true })
+  fileUrl: string;
+
+  @ManyToOne(() => Conversation, conversation => conversation.messages)
+  conversation: Conversation;
 
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ default: false })
-  isRead: boolean;
+  @UpdateDateColumn()
+  updatedAt: Date;
 } 
